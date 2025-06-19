@@ -1,5 +1,10 @@
 ## Change Log
 
+### v0.3.1 - 2025/06/19
+**The Final Frontier**
+
+- fix: removed the brackets in the php forms, for compatibility with unraid 7.x (@gerrit117)
+
 ### v0.3.0 - 2024/05/05
 **Margaritaville**
 
