@@ -1,0 +1,486 @@
+Menu="Vmbackup:6"
+Title="Restore"
+Icon="clone"
+Markdown="false"
+---
+
+<?php
+
+  /* vmbackup plugin
+    copyright JTok */
+
+  require_once '/usr/local/emhttp/plugins/vmbackup/include/restore_functions.php';
+
+  // Load current backup location from default user.cfg for pre-population
+  $user_cfg_path = '/boot/config/plugins/vmbackup/user.cfg';
+  $user_cfg = file_exists($user_cfg_path) ? parse_ini_file($user_cfg_path) : [];
+  $default_backup_location = $user_cfg['backup_location'] ?? '';
+
+  // Check if restore is running
+  $lock = restore_lock_check();
+  $restore_running = ($lock['locked'] && $lock['type'] === 'restore');
+?>
+
+<!-- import stylesheets -->
+<link type="text/css" rel="stylesheet" href="<?autov('/webGui/styles/jquery.filetree.css')?>">
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/vmbackup/include/vmbackup.css')?>">
+
+<!-- import javascript sources -->
+<script type="text/javascript" src="<?autov('/webGui/javascript/jquery.filetree.js')?>"></script>
+<script type="text/javascript" src="<?autov('/plugins/vmbackup/include/javascript/functions.js')?>"></script>
+
+<style>
+  #restore_status_table { width: 100%; border-collapse: collapse; }
+  #restore_status_table th,
+  #restore_status_table td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #444; }
+  #restore_status_table th { background: #333; color: #ccc; font-weight: bold; }
+  #restore_log_pre { background: #1a1a1a; color: #ccc; padding: 8px; font-size: 11px; font-family: monospace; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .restore_scan_results_area { margin-top: 10px; }
+  .vm_select_row td { padding: 4px 8px; }
+  .vm_select_row td:first-child { width: 30px; }
+  .vm_format_badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 11px; margin-left: 4px; }
+  .badge_uncompressed { background: #3a6; color: #fff; }
+  .badge_zstd { background: #37a; color: #fff; }
+  .badge_tar_gz { background: #a73; color: #fff; }
+  .badge_incomplete { background: #a33; color: #fff; }
+  .restore_section_title { font-weight: bold; color: #ccc; padding: 6px 0 4px 0; font-size: 14px; }
+  .vm_select_all_links { font-size: 12px; margin-bottom: 4px; }
+  .vm_select_all_links a { cursor: pointer; color: #6af; text-decoration: underline; margin-right: 10px; }
+  .restore_confirm_warning { padding: 8px 10px; margin: 6px 0; }
+  #btn_restore_now, #btn_stop_restore, #btn_scan { font-size: 13px; }
+  #btn_stop_restore { background: #a33; color: #fff; }
+  .restore_status_spinner { margin-right: 6px; }
+</style>
+
+<!-- run jquery/javascript -->
+<script type="text/javascript">
+  $(function() {
+    // Set up filetree picker for backup location
+    $('#backup_location_restore').click(function() {
+      var el = this;
+      var startDir = $(el).val();
+      if (!startDir || startDir === '') startDir = '/mnt/';
+      // Strip to directory if it looks like a file path
+      if (startDir.slice(-1) !== '/') startDir = startDir.substring(0, startDir.lastIndexOf('/') + 1);
+      if (startDir === '') startDir = '/mnt/';
+      $.filetree_open({
+        root: '/mnt/',
+        filter: 'NO_FILES_FILTER',
+        folderonly: true,
+        select: function(file) {
+          $(el).val(file).trigger('change');
+        },
+        start: startDir
+      });
+    });
+
+    // Scan button
+    $('#btn_scan').on('click', function() {
+      var backup_location = $('#backup_location_restore').val().trim();
+      if (!backup_location) {
+        swal('Error', 'Please enter a backup location.', 'error');
+        return;
+      }
+      $('#scan_results').html('<i class="fa fa-spinner fa-spin restore_status_spinner"></i> Scanning...');
+      $('#vm_select_all_row').hide();
+      $.post('/plugins/vmbackup/include/restore.php', {
+        action: 'scan',
+        backup_location: backup_location
+      }, function(data) {
+        if (data.error) {
+          swal('Scan Error', data.error, 'error');
+          $('#scan_results').html('');
+          return;
+        }
+        var vmCount = Object.keys(data.vms).length;
+        if (vmCount === 0) {
+          $('#scan_results').html('<p>No backup versions found at this location.</p>');
+          return;
+        }
+        renderVmList(data.vms);
+      }, 'json').fail(function() {
+        swal('Error', 'Scan request failed. Check the backup location and server connectivity.', 'error');
+        $('#scan_results').html('');
+      });
+    });
+
+    // Select All / Deselect All
+    $(document).on('click', '#link_select_all', function(e) {
+      e.preventDefault();
+      $('#vm_list_table input[type=checkbox]').prop('checked', true);
+      updateRestoreButton();
+    });
+    $(document).on('click', '#link_deselect_all', function(e) {
+      e.preventDefault();
+      $('#vm_list_table input[type=checkbox]').prop('checked', false);
+      updateRestoreButton();
+    });
+
+    // VM checkbox change — update button state
+    $(document).on('change', '.vm_restore_checkbox', function() {
+      updateRestoreButton();
+    });
+
+    // Confirmation checkbox controls Restore button
+    $('#confirm_restore').on('change', function() {
+      updateRestoreButton();
+    });
+
+    // Restore Now button
+    $('#btn_restore_now').on('click', function() {
+      var selectedVms = getSelectedVms();
+      if (selectedVms.length === 0) {
+        swal('No VMs Selected', 'Please select at least one VM to restore.', 'warning');
+        return;
+      }
+      if (!$('#confirm_restore').is(':checked')) {
+        swal('Confirmation Required', 'Please check the confirmation checkbox before restoring.', 'warning');
+        return;
+      }
+      var vmList = selectedVms.map(function(v) { return v.vm + ' @ ' + v.version; }).join('\n');
+      swal({
+        title: 'Confirm Restore',
+        text: 'The following VMs will be restored:\n\n' + vmList + '\n\nCurrent disk images will be backed up to .pre_restore_tmp before overwriting.',
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, Restore',
+        cancelButtonText: 'Cancel'
+      }).then(function(result) {
+        if (result.value) {
+          startRestore(selectedVms);
+        }
+      });
+    });
+
+    // Stop Restore button
+    $('#btn_stop_restore').on('click', function() {
+      swal({
+        title: 'Stop Restore?',
+        text: 'A stop signal will be sent. Files already copied will be reverted to their pre-restore state using .pre_restore_tmp backups.',
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, Stop',
+        cancelButtonText: 'Cancel'
+      }).then(function(result) {
+        if (result.value) {
+          $.post('/plugins/vmbackup/include/restore.php', {action: 'stop_restore'}, function(data) {
+            if (data.error) {
+              swal('Error', data.error, 'error');
+            } else {
+              swal('Stop Signal Sent', 'The restore will stop at the next checkpoint.', 'info');
+            }
+          }, 'json');
+        }
+      });
+    });
+
+    // If restore is running on page load, show status and start polling
+    <?php if ($restore_running): ?>
+    $('#restore_status_section').show();
+    $('#btn_stop_restore').show();
+    $('#btn_restore_now').prop('disabled', true);
+    startStatusPolling();
+    <?php endif; ?>
+  });
+
+  // Build the VM selection table from scan results
+  function renderVmList(vms) {
+    var html = '<table id="vm_list_table" width="100%" cellspacing="0">';
+    html += '<thead><tr><th style="width:30px"></th><th>VM</th><th>Version to Restore</th></tr></thead>';
+    html += '<tbody>';
+
+    $.each(vms, function(vmName, versions) {
+      var cbId = 'cb_vm_' + vmName.replace(/[^a-zA-Z0-9_]/g, '_');
+      var selId = 'sel_vm_' + vmName.replace(/[^a-zA-Z0-9_]/g, '_');
+      html += '<tr class="vm_select_row">';
+      html += '<td><input type="checkbox" id="' + cbId + '" class="vm_restore_checkbox" data-vm="' + escHtml(vmName) + '" data-sel="' + selId + '" checked></td>';
+      html += '<td><label for="' + cbId + '">' + escHtml(vmName) + '</label></td>';
+      html += '<td><select id="' + selId + '" class="vm_version_select" data-vm="' + escHtml(vmName) + '">';
+      $.each(versions, function(i, v) {
+        var badge = '';
+        if (v.format === 'zstd') {
+          badge += '<span class="vm_format_badge badge_zstd">[zstd]</span>';
+        } else if (v.format === 'tar_gz') {
+          badge += '<span class="vm_format_badge badge_tar_gz">[tar.gz]</span>';
+        } else {
+          badge += '<span class="vm_format_badge badge_uncompressed">[uncompressed]</span>';
+        }
+        var completeness = v.complete ? ' \u2713' : ' \u26a0 incomplete';
+        var nvramNote = (!v.has_nvram) ? ' (no nvram)' : '';
+        var label = v.display + completeness + nvramNote;
+        html += '<option value="' + escHtml(v.timestamp) + '">' + escHtml(label) + '</option>';
+      });
+      html += '</select></td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    $('#scan_results').html(html);
+    $('#vm_select_all_row').show();
+    updateRestoreButton();
+  }
+
+  // Collect selected VM/version pairs
+  function getSelectedVms() {
+    var selected = [];
+    $('.vm_restore_checkbox:checked').each(function() {
+      var vmName = $(this).data('vm');
+      var selId = $(this).data('sel');
+      var version = $('#' + selId).val();
+      selected.push({vm: vmName, version: version});
+    });
+    return selected;
+  }
+
+  // Enable/disable Restore button based on selection and confirmation
+  function updateRestoreButton() {
+    var anyChecked = ($('.vm_restore_checkbox:checked').length > 0);
+    var confirmed = $('#confirm_restore').is(':checked');
+    $('#btn_restore_now').prop('disabled', !(anyChecked && confirmed));
+  }
+
+  // Start the restore via AJAX
+  function startRestore(selectedVms) {
+    $('#btn_restore_now').prop('disabled', true);
+    $.post('/plugins/vmbackup/include/restore.php', {
+      action: 'restore_now',
+      backup_location: $('#backup_location_restore').val().trim(),
+      vm_selections: JSON.stringify(selectedVms),
+      dry_run: $('#dry_run_restore').val()
+    }, function(data) {
+      if (data.error) {
+        swal('Error', data.error, 'error');
+        updateRestoreButton();
+        return;
+      }
+      // Show status section and begin polling
+      $('#restore_status_section').show();
+      $('#btn_stop_restore').show();
+      startStatusPolling();
+    }, 'json').fail(function() {
+      swal('Error', 'Failed to start restore. Please check server logs.', 'error');
+      updateRestoreButton();
+    });
+  }
+
+  // Status polling
+  var statusPoller = null;
+
+  function startStatusPolling() {
+    if (statusPoller) return; // already polling
+    statusPoller = setInterval(function() {
+      $.get('/plugins/vmbackup/include/restore.php', {action: 'get_status'}, function(data) {
+        updateStatusDisplay(data);
+        if (!data.running) {
+          stopStatusPolling();
+          $('#btn_restore_now').prop('disabled', false);
+          $('#btn_stop_restore').hide();
+          updateRestoreButton();
+          swal('Restore Complete', 'The restore operation has finished. Check the log below for details.', 'success');
+        }
+      }, 'json');
+    }, 2000);
+  }
+
+  function stopStatusPolling() {
+    if (statusPoller) {
+      clearInterval(statusPoller);
+      statusPoller = null;
+    }
+  }
+
+  // Update the status display table and log panel
+  function updateStatusDisplay(data) {
+    // Parse status lines: TIMESTAMP|VM|STATE|MESSAGE
+    var rows = '';
+    if (data.status && data.status.length > 0) {
+      $.each(data.status, function(i, line) {
+        var parts = line.split('|');
+        var ts  = parts[0] || '';
+        var vm  = parts[1] || '';
+        var state = parts[2] || '';
+        var msg = parts[3] || '';
+        // Extract time portion only (HH:MM:SS)
+        var timeStr = ts.length >= 8 ? ts.slice(-8) : ts;
+        rows += '<tr>';
+        rows += '<td>' + escHtml(vm) + '</td>';
+        rows += '<td>' + escHtml(state) + (msg ? ': ' + escHtml(msg) : '') + '</td>';
+        rows += '<td>' + escHtml(timeStr) + '</td>';
+        rows += '</tr>';
+      });
+    } else {
+      rows = '<tr><td colspan="3" style="color:#888">No status information yet...</td></tr>';
+    }
+    $('#restore_status_table tbody').html(rows);
+
+    // Update log
+    if (data.log !== undefined) {
+      var $log = $('#restore_log_pre');
+      $log.text(data.log);
+      // Auto-scroll to bottom
+      $log.scrollTop($log[0].scrollHeight);
+    }
+  }
+
+  // HTML escape helper
+  function escHtml(str) {
+    return $('<div>').text(str).html();
+  }
+</script>
+
+<div id="vmbackup_restore_div" class="wrapper_div">
+
+  <!-- warning banner if a backup is currently running -->
+  <?php if ($lock['locked'] && $lock['type'] === 'backup'): ?>
+  <div class="wrapper_div">
+    <span class="important_info"><p>Warning</p></span>
+    <p>A VM backup operation is currently in progress. Starting a restore at the same time is not allowed and may corrupt data.
+    <br>Please wait for the backup to complete before performing a restore.</p>
+  </div>
+  <?php endif; ?>
+
+  <!-- Section 1: Backup Location -->
+  <div id="title" class="nocontrol full_width_title">Step 1 &mdash; Backup Location</div>
+
+  <div id="restore_location_div" class="grid_container_left">
+
+    <label name="backup_location_restore_label" class="input_description">Backup location:</label>
+    <div class="user_input_div">
+      <input type="text" id="backup_location_restore" name="backup_location_restore" class="setting"
+        value="<?=htmlspecialchars($default_backup_location, ENT_QUOTES)?>"
+        placeholder="Click to browse or type path (e.g. /mnt/user/Backups)"
+        data-pickfilter="NO_FILES_FILTER" data-pickfolders="true">
+    </div>
+
+    <span id="backup_location_restore_help" name="backup_location_restore_help" class="custom_inline_help">
+      <p>The root folder where VM backups are stored. Each VM should have its own subfolder here.</p>
+      <ul>
+        <li>Click the field to open the folder picker (rooted at /mnt/).</li>
+        <li>Pre-populated from your current Settings backup location.</li>
+        <li>Each VM subfolder will be scanned for available backup versions.</li>
+      </ul>
+    </span>
+
+    <label name="btn_scan_label" class="input_description">&nbsp;</label>
+    <div class="user_input_div">
+      <input type="button" id="btn_scan" value="Scan Backups" title="Scan the backup location for available VM versions.">
+    </div>
+
+    <span class="custom_inline_help">
+      <p>Scans the backup location and lists all available VMs and their backup versions.</p>
+    </span>
+
+  </div>
+
+  <!-- Section 2: VM and Version Selection (shown after scan) -->
+  <div id="vm_selection_section">
+
+    <div id="title" class="nocontrol full_width_title">Step 2 &mdash; Select VMs and Versions</div>
+
+    <div id="vm_select_all_row" style="display:none; padding: 0 10px 4px 10px;">
+      <div class="vm_select_all_links">
+        <a id="link_select_all">Select All</a>
+        <a id="link_deselect_all">Deselect All</a>
+      </div>
+    </div>
+
+    <div id="scan_results" class="restore_scan_results_area" style="padding: 0 10px 10px 10px;"></div>
+
+  </div>
+
+  <!-- Section 3: Options -->
+  <div id="title" class="nocontrol full_width_title">Step 3 &mdash; Options</div>
+
+  <div id="restore_options_div" class="grid_container_left">
+
+    <label name="dry_run_restore_label" class="input_description">Dry run (no changes)?</label>
+    <div class="user_input_div"><select id="dry_run_restore" name="dry_run_restore" size="1">
+      <option value="0" selected>No</option>
+      <option value="1">Yes</option>
+    </select></div>
+
+    <span id="dry_run_restore_help" name="dry_run_restore_help" class="custom_inline_help">
+      <p>When set to 'Yes', the restore process will simulate all operations without actually copying any files.</p>
+      <ul>
+        <li>Use this to verify what would be restored before committing.</li>
+        <li>No files will be overwritten and no .pre_restore_tmp backups will be created.</li>
+        <li>Default is 'No'.</li>
+      </ul>
+    </span>
+
+  </div>
+
+  <!-- Section 4: Confirmation -->
+  <div id="title" class="nocontrol full_width_title">Step 4 &mdash; Confirm</div>
+
+  <div id="restore_confirm_div" class="grid_container_left">
+
+    <label name="confirm_restore_label" class="input_description">I understand the risks:</label>
+    <div class="user_input_div">
+      <input type="checkbox" id="confirm_restore" name="confirm_restore">
+      <label for="confirm_restore" style="margin-left:6px;">I understand this will overwrite existing VM disk images and configuration files.</label>
+    </div>
+
+    <span id="confirm_restore_help" name="confirm_restore_help" class="custom_inline_help">
+      <p>This restore operation will overwrite existing VM disk images and XML configuration files.</p>
+      <ul>
+        <li>Before any file is overwritten, a copy is saved to a <code>.pre_restore_tmp</code> folder as a safety net.</li>
+        <li>If the restore is stopped or fails, the original files can be recovered from <code>.pre_restore_tmp</code>.</li>
+        <li>Running VMs will be shut down before restore begins. Check the status panel for progress.</li>
+        <li>A dry run is strongly recommended before performing a live restore.</li>
+      </ul>
+    </span>
+
+  </div>
+
+  <div class="wrapper_div">
+    <span class="important_info"><p>Note</p></span>
+    <p>Before overwriting any file, the restore script saves the original to a <strong>.pre_restore_tmp</strong> subfolder inside the VM's directory.
+    <br>If anything goes wrong, you can manually recover your original files from that folder.
+    <br>It is strongly recommended to perform a <strong>Dry Run</strong> first to review what will be changed.</p>
+  </div>
+
+  <!-- Section 5: Actions and Status -->
+  <div id="title" class="nocontrol full_width_title">Step 5 &mdash; Run Restore</div>
+
+  <div id="restore_actions_div" style="padding: 0 10px 10px 10px;">
+    <input type="button" id="btn_restore_now" value="Restore Now" disabled
+      title="Select VMs and check the confirmation box to enable.">
+    <input type="button" id="btn_stop_restore" value="Stop Restore"
+      title="Send a stop signal to the running restore operation."
+      <?php if (!$restore_running): ?>style="display:none"<?php endif; ?>>
+  </div>
+
+  <!-- Status Panel -->
+  <div id="restore_status_section" <?php if (!$restore_running): ?>style="display:none"<?php endif; ?>>
+
+    <div id="title" class="nocontrol full_width_title">Restore Status</div>
+
+    <div style="padding: 0 10px 10px 10px;">
+      <table id="restore_status_table">
+        <thead>
+          <tr>
+            <th>VM</th>
+            <th>Status</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3" style="color:#888">No status information yet...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="title" class="nocontrol full_width_title">Restore Log</div>
+
+    <div style="padding: 0 10px 10px 10px;">
+      <pre id="restore_log_pre">Waiting for log output...</pre>
+    </div>
+
+  </div>
+
+</div>
+
