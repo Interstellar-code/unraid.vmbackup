@@ -26,6 +26,9 @@ me=$(basename "${0}")
 
 ################################################## script variables start ######################################################
 
+# timeout in seconds for critical virsh commands to prevent hanging when libvirt is stopping.
+virsh_timeout=30
+
 # default 0 but set the master switch to 1 if you want to enable the script otherwise it will not run.
 enabled="no_config"
 
@@ -426,6 +429,20 @@ only_send_error_notifications="no_config"
       vdisk_type="$(xmllint --xpath "string(/domain/devices/disk[${i}]/driver/@type)" "${vm}.xml" 2>/dev/null)"
       vdisk_spec="$(xmllint --xpath "string(/domain/devices/disk[${i}]/target/@dev)" "${vm}.xml" 2>/dev/null)"
 
+      # Bug 4 fix: skip cdrom and floppy devices to avoid associative array subscript errors.
+      vdisk_device="$(xmllint --xpath "string(/domain/devices/disk[${i}]/@device)" "${vm}.xml" 2>/dev/null)"
+      if [[ "${vdisk_device}" == "cdrom" ]] || [[ "${vdisk_device}" == "floppy" ]]; then
+        log_message "information: disk[${i}] on ${vm} has device type '${vdisk_device}'. skipping."
+        continue
+      fi
+
+      # Bug 3 fix: skip block device passthrough disks as they cannot be snapshotted or file-copied.
+      vdisk_disk_type="$(xmllint --xpath "string(/domain/devices/disk[${i}]/@type)" "${vm}.xml" 2>/dev/null)"
+      if [[ "${vdisk_disk_type}" == "block" ]]; then
+        log_message "information: disk[${i}] on ${vm} is a block device passthrough (type='block'). skipping."
+        continue
+      fi
+
       # skip if vdisk_path is empty.
       if [[ -z "${vdisk_path}" ]]; then
         log_message "warning: There's an empty vdisk_path on ${vm}. This is mainly caused by an empty cdrom file path. skipping vdisk." "empty vdisk_path on ${vm}" "warning"
@@ -472,7 +489,8 @@ only_send_error_notifications="no_config"
 
         # check to see if vdisk extension is the same as the snapshot extension. if it is, error and skip the vm.
         if [[ "${disk_extension}" == "${snapshot_extension}" ]]; then
-          log_message "failure: extension for ${disk} on ${vm} is the same as the snapshot extension ${snapshot_extension}. disk will always be skipped. this usually means that the disk path in the config was not changed from /mnt/user. if disk path is correct, then try changing snapshot_extension or vdisk extension." "cannot backup vdisk on ${vm}" "alert"
+          log_message "failure: extension for $(basename "${disk}") matches snapshot_extension '${snapshot_extension}'. This usually means a previous snapshot was not fully committed. Use 'Fix Snapshots' in the Danger Zone tab to resolve this. disk will be skipped." "cannot backup vdisk on ${vm}" "alert"
+          skip_disk="1"
         fi
 
         # check to see if vdisk should be skipped by extension.
@@ -658,16 +676,36 @@ only_send_error_notifications="no_config"
               fi
 
               # create snapshot.
-              if ! "${snapshot_cmd[@]}"; then
-                snapshot_succeeded=false
+              snapshot_succeeded=false
+              if "${snapshot_cmd[@]}"; then
+                snapshot_succeeded=true
+              elif [[ -n "${quiesce}" ]]; then
+                # Bug 5 fix: if quiesce was requested and failed, retry without --quiesce before giving up.
+                log_message "warning: snapshot with --quiesce failed on ${snap_name} for ${vm}. retrying without --quiesce." "${vm} snapshot quiesce failed" "warning"
+
+                # build snapshot command without quiesce.
+                snapshot_cmd_no_quiesce=("${snapshot_cmd[@]}")
+                # remove the last element (which is "${quiesce}") from the array.
+                unset 'snapshot_cmd_no_quiesce[-1]'
+
+                if "${snapshot_cmd_no_quiesce[@]}"; then
+                  snapshot_succeeded=true
+                  log_message "information: snapshot command succeeded without --quiesce on ${snap_name} for ${vm}. backup may not be fully consistent."
+                else
+                  log_message "failure: snapshot command failed (with and without --quiesce) on ${snap_name} for ${vm}." "${vm} snapshot failed" "alert"
+                fi
+              else
                 log_message "failure: snapshot command failed on ${snap_name} for ${vm}." "${vm} snapshot failed" "alert"
+              fi
+
+              if [ "${snapshot_succeeded}" = false ]; then
 
                 # attempt backup using fallback method.
                 if [ "${snapshot_fallback}" -eq 1 ]; then
                   log_message "warning: snapshot_fallback is ${snapshot_fallback}. attempting backup for ${vm} using fallback method." "${vm} fallback backup" "warning"
 
                   # get the state of the vm for making sure it is off before backing up.
-                  vm_state=$(virsh domstate "${vm}")
+                  vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
                   # get the state of the vm for putting the VM in it's original state after backing up.
                   vm_original_state=${vm_state}
@@ -707,9 +745,9 @@ only_send_error_notifications="no_config"
                   break
                 fi
 
-              else
+              fi
 
-                snapshot_succeeded=true
+              if [ "${snapshot_succeeded}" = true ]; then
                 log_message "information: snapshot command succeeded on ${snap_name} for ${vm}."
               fi
 
@@ -1030,7 +1068,7 @@ only_send_error_notifications="no_config"
 
       if [ "${vm_desired_state}" == "paused" ]; then
         # attempt to pause the vm.
-        virsh suspend "${vm}"
+        timeout "${virsh_timeout}" virsh suspend "${vm}"
         log_message "information: ${vm} is ${vm_state}. vm desired state is ${vm_desired_state}. performing ${clean_shutdown_checks} ${seconds_to_wait} second cycles waiting for ${vm} to pause. "
 
       elif [ "${vm_desired_state}" == "shut off" ]; then
@@ -1048,7 +1086,7 @@ only_send_error_notifications="no_config"
           log_message "action: ${vm} is ${vm_state}. vm desired state is ${vm_desired_state}. resuming."
 
           # resume the vm.
-          virsh resume "${vm}"
+          timeout "${virsh_timeout}" virsh resume "${vm}"
         fi
 
         # sleep X/2 (default: 30) seconds before shutdown to handle a more clean ACPI shutdown.
@@ -1057,7 +1095,7 @@ only_send_error_notifications="no_config"
         sleep $(( seconds_to_wait / 2 )) # default: 30 seconds / 2 = 15 seconds
 
         # attempt to cleanly shutdown the vm.
-        virsh shutdown "${vm}"
+        timeout "${virsh_timeout}" virsh shutdown "${vm}"
         log_message "information: performing ${clean_shutdown_checks} ${seconds_to_wait} second cycles waiting for ${vm} to shutdown cleanly."
       fi
 
@@ -1069,7 +1107,7 @@ only_send_error_notifications="no_config"
         sleep ${seconds_to_wait}
 
         # get the state of the vm.
-        vm_state=$(virsh domstate "${vm}")
+        vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
         # if the vm is running decide what to do.
         if [ ! "${vm_state}" == "${vm_desired_state}" ]; then
@@ -1083,10 +1121,10 @@ only_send_error_notifications="no_config"
               log_message "information: kill_vm_if_cant_shutdown is ${kill_vm_if_cant_shutdown}. killing vm."
 
               # destroy vm, based on testing this should be instant and without failure.
-              virsh destroy "${vm}"
+              timeout "${virsh_timeout}" virsh destroy "${vm}"
 
               # get the state of the vm.
-              vm_state=$(virsh domstate "${vm}")
+              vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
               # if the vm is shut off then proceed or give up.
               if [ "${vm_state}" == "shut off" ]; then
@@ -1108,12 +1146,12 @@ only_send_error_notifications="no_config"
 
               # if the vm is running but the guesttools aren't responding -> destory vm
               if ! virsh guestinfo "${vm}" &>/dev/null && [ "${vm_state}" == "running" ]; then
-                virsh destroy "${vm}"
+                timeout "${virsh_timeout}" virsh destroy "${vm}"
                 sleep 1
               fi
 
               # recheck the state of the vm.
-              vm_state=$(virsh domstate "${vm}")
+              vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
               if [ "${vm_state}" == "${vm_desired_state}" ]; then
 
@@ -1772,11 +1810,11 @@ only_send_error_notifications="no_config"
 
     if [ "${snapshot_fallback}" -eq 0 ]; then
 
-      log_message "information: snapshot_fallback is ${snapshot_fallback}. snapshots will fallback to standard backups."
+      log_message "information: snapshot_fallback is ${snapshot_fallback}. snapshots will NOT fallback to standard backups."
 
     elif [ "${snapshot_fallback}" -eq 1 ]; then
 
-      log_message "information: snapshot_fallback is ${snapshot_fallback}. snapshots will not fallback to standard backups."
+      log_message "information: snapshot_fallback is ${snapshot_fallback}. snapshots will fallback to standard backups."
 
     fi
 
@@ -2310,7 +2348,7 @@ only_send_error_notifications="no_config"
 
 
     # get the state of the vm for making sure it is off before backing up.
-    vm_state=$(virsh domstate "${vm}")
+    vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
     # get the state of the vm for putting the VM in it's original state after backing up.
     vm_original_state=${vm_state}
@@ -2455,7 +2493,7 @@ only_send_error_notifications="no_config"
       if [ "${set_vm_to_original_state}" -eq 1 ]; then
 
         # get the current state of the vm for checking against its orginal state.
-        vm_state=$(virsh domstate "${vm}")
+        vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
         # start the vm after backup based on previous state.
         if [ ! "${vm_state}" == "${vm_original_state}" ] && { [ "${vm_original_state}" == "running" ] || [ "${vm_original_state}" == "pmsuspended" ]; }; then
@@ -2465,12 +2503,12 @@ only_send_error_notifications="no_config"
           if [ "${vm_state}" == "paused" ]; then
 
             # resume vm
-            virsh resume "${vm}"
+            timeout "${virsh_timeout}" virsh resume "${vm}"
 
           elif [ "${vm_state}" == "shut off" ]; then
 
             # start vm
-            virsh start "${vm}"
+            timeout "${virsh_timeout}" virsh start "${vm}"
 
           else
 
@@ -2491,23 +2529,30 @@ only_send_error_notifications="no_config"
       # if start_vm_after_backup is set to 1 then start the vm but dont check that it has been successful.
       if [ "${start_vm_after_backup}" -eq 1 ]; then
 
-        log_message "information: vm_state is ${vm_state}. start_vm_after_backup is ${start_vm_after_backup}. starting ${vm}." "script starting ${vm}" "normal"
+        # re-check vm state to avoid double-start if set_vm_to_original_state already started the vm.
+        vm_state=$(timeout "${virsh_timeout}" virsh domstate "${vm}")
 
-        if [ "${vm_state}" == "paused" ]; then
-
-          # resume vm
-          virsh resume "${vm}"
-
-        elif [ "${vm_state}" == "shut off" ]; then
-
-          # start vm
-          virsh start "${vm}"
-
+        if [ "${vm_state}" == "running" ]; then
+          log_message "information: vm_state is ${vm_state}. vm is already running. skipping start_vm_after_backup."
         else
+          log_message "information: vm_state is ${vm_state}. start_vm_after_backup is ${start_vm_after_backup}. starting ${vm}." "script starting ${vm}" "normal"
 
-          # there was an error
-          log_message "warning: vm_state is ${vm_state}. vm_original_state is ${vm_original_state}. unable to start ${vm}." "script cannot start ${vm}" "warning"
+          if [ "${vm_state}" == "paused" ]; then
 
+            # resume vm
+            timeout "${virsh_timeout}" virsh resume "${vm}"
+
+          elif [ "${vm_state}" == "shut off" ]; then
+
+            # start vm
+            timeout "${virsh_timeout}" virsh start "${vm}"
+
+          else
+
+            # there was an error
+            log_message "warning: vm_state is ${vm_state}. vm_original_state is ${vm_original_state}. unable to start ${vm}." "script cannot start ${vm}" "warning"
+
+          fi
         fi
 
       fi
@@ -2744,12 +2789,12 @@ only_send_error_notifications="no_config"
         if [ "${vm_state}" == "paused" ]; then
 
           # resume vm
-          virsh resume "${vm}"
+          timeout "${virsh_timeout}" virsh resume "${vm}"
 
         elif [ "${vm_state}" == "shut off" ]; then
 
           # start vm
-          virsh start "${vm}"
+          timeout "${virsh_timeout}" virsh start "${vm}"
 
         else
 
@@ -2775,12 +2820,12 @@ only_send_error_notifications="no_config"
         if [ "${vm_state}" == "paused" ]; then
 
           # resume vm
-          virsh resume "${vm}"
+          timeout "${virsh_timeout}" virsh resume "${vm}"
 
         elif [ "${vm_state}" == "shut off" ]; then
 
           # start vm
-          virsh start "${vm}"
+          timeout "${virsh_timeout}" virsh start "${vm}"
 
         else
 
