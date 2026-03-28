@@ -568,6 +568,25 @@
     "${runscript}" "${argument1}" | at NOW -M > /dev/null 2>&1
   }
 
+  function restore_now() {
+    local restore_script="/usr/local/emhttp/plugins/vmbackup/scripts/restore.sh"
+    local restore_cfg="/boot/config/plugins/vmbackup/restore.cfg"
+    mkdir -p /tmp/vmbackup/restore
+    if [[ -f "${restore_script}" ]] && [[ -f "${restore_cfg}" ]]; then
+      nohup bash "${restore_script}" > /dev/null 2>&1 &
+    fi
+  }
+
+  function stop_restore() {
+    local stop_file="/tmp/vmbackup/restore/restore-stop.txt"
+    local pid_file="/tmp/vmbackup/restore.pid"
+    mkdir -p /tmp/vmbackup/restore
+    echo "stop" > "${stop_file}"
+    if [[ -f "${pid_file}" ]]; then
+      kill -TERM "$(cat "${pid_file}")" 2>/dev/null || true
+    fi
+  }
+
   # function to merge two arrays without duplicates.
   function merge_arrays() {
     # create local variables.
@@ -650,8 +669,14 @@
     'abort_script')
       abort_script
       ;;
+    'restore_now')
+      restore_now
+      ;;
+    'stop_restore')
+      stop_restore
+      ;;
     *)
-     echo "usage ${0} update_user_script, update_user_conf_file, create_vm_lists true/false, backup_now, fix_snapshots, abort_script"
+     echo "usage ${0} update_user_script, update_user_conf_file, create_vm_lists true/false, backup_now, fix_snapshots, abort_script, restore_now, stop_restore"
      ;;
   esac
 
