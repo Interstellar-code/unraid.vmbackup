@@ -1,15 +1,29 @@
-# unraid.vmbackup plugin
+# unraid.vmbackup plugin (Community Fork)
 
-## NOTICE: I currently do not have the time to do more than maintain this project for myself at the moment. I will eventually do more work on it as my life permits, but for now development will be sporadic at best. I am more happy to add someone else to the project to maintain it, or even accept some PRs as that is much easier for me to find time for
+> **Fork of [JTok/unraid.vmbackup](https://github.com/JTok/unraid.vmbackup)** — maintained by [Interstellar-code](https://github.com/Interstellar-code). Original plugin by [JTok](https://github.com/JTok) (MIT License).
 
-## currently in beta
+v0.3.0 - 2026/03/28
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NG5HGW4Q3CZU4&source=url "Donations are appreciated")
-
-v0.2.9 - 2024/05/02
-
-Plugin for backing up VMs in unRAID including vdisks, configuration files, and nvram.
+Plugin for backing up **and restoring** VMs in unRAID including vdisks, configuration files, and nvram.
 This plugin installs [xmlstarlet](http://xmlstar.sourceforge.net/) to work with VM XML config files.
+
+## What's New in v0.3.0
+
+- **Restore Tab** — restore VMs from backups directly from the WebGUI (supports all 3 backup formats: uncompressed, zstd, tar.gz)
+- **Unraid 7 Compatibility** — fixes settings not saving on Unraid 7 (issues #46, #47)
+- **13 Bug Fixes** — see [CHANGELOG.md](CHANGELOG.md) for full details
+- **Rsyncable Compression** — optional `--rsyncable` flag for zstd/gzip for efficient remote sync
+
+### Restore Feature
+
+The new **Restore** tab (Settings → VM Backup → Restore) provides:
+
+1. **Scan** your backup location to discover available VM backups and versions
+2. **Select** which VMs to restore and from which backup version
+3. **Dry Run** mode to preview what will happen without making changes
+4. **Safety Net** — current files are renamed to `.pre_restore_tmp` before overwriting, and automatically reverted if you stop the restore mid-way
+5. **Live Status** — real-time progress updates in the WebGUI
+6. Supports all backup formats: uncompressed, zstd-compressed, and legacy tar.gz
 
 Currently the plugin is in beta. I have tested them as well as I can, but I cannot guarantee they will work correctly for everyone, so be sure to test thoroughly on your system before depending on this plugin for backups. Please review the Change Log and To-Do List if you would like to know more.
 
