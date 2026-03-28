@@ -135,7 +135,7 @@ PYEOF
     vm=$(echo "${obj}" | grep -oP '"vm"\s*:\s*"\K[^"]+')
     version=$(echo "${obj}" | grep -oP '"version"\s*:\s*"\K[^"]+')
     if [[ -n "${vm}" ]]; then
-      echo -e "${vm}\t${version}"
+      printf '%s\t%s\n' "${vm}" "${version}"
     fi
   done
 }

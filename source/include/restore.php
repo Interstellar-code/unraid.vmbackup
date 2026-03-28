@@ -14,6 +14,12 @@ switch ($action) {
       echo json_encode(['error' => 'Invalid or missing backup location']);
       exit;
     }
+    $real_path = realpath($backup_location);
+    if ($real_path === false || strpos($real_path, '/mnt/') !== 0) {
+      echo json_encode(['error' => 'Backup location must be under /mnt/']);
+      exit;
+    }
+    $backup_location = $real_path;
     $versions = scan_backup_versions($backup_location);
     echo json_encode(['success' => true, 'vms' => $versions]);
     break;
@@ -33,6 +39,12 @@ switch ($action) {
       echo json_encode(['error' => 'Invalid backup location']);
       exit;
     }
+    $real_path = realpath($backup_location);
+    if ($real_path === false || strpos($real_path, '/mnt/') !== 0) {
+      echo json_encode(['error' => 'Backup location must be under /mnt/']);
+      exit;
+    }
+    $backup_location = $real_path;
 
     $selections = json_decode($vm_selections, true);
     if (empty($selections)) {

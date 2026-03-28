@@ -568,6 +568,9 @@
     "${runscript}" "${argument1}" | at NOW -M > /dev/null 2>&1
   }
 
+  # Note: restore is normally launched directly from restore.php via nohup, not through
+  # these functions. restore_now and stop_restore below are provided for CLI/scripting
+  # convenience only and are not called by the web UI.
   function restore_now() {
     local restore_script="/usr/local/emhttp/plugins/vmbackup/scripts/restore.sh"
     local restore_cfg="/boot/config/plugins/vmbackup/restore.cfg"

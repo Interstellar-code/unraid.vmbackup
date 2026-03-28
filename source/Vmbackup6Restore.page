@@ -145,9 +145,10 @@ Markdown="false"
         showCancelButton: true,
         confirmButtonColor: '#d33',
         confirmButtonText: 'Yes, Restore',
-        cancelButtonText: 'Cancel'
-      }).then(function(result) {
-        if (result.value) {
+        cancelButtonText: 'Cancel',
+        closeOnConfirm: true
+      }, function(confirmed) {
+        if (confirmed) {
           startRestore(selectedVms);
         }
       });
@@ -162,9 +163,10 @@ Markdown="false"
         showCancelButton: true,
         confirmButtonColor: '#d33',
         confirmButtonText: 'Yes, Stop',
-        cancelButtonText: 'Cancel'
-      }).then(function(result) {
-        if (result.value) {
+        cancelButtonText: 'Cancel',
+        closeOnConfirm: true
+      }, function(confirmed) {
+        if (confirmed) {
           $.post('/plugins/vmbackup/include/restore.php', {action: 'stop_restore'}, function(data) {
             if (data.error) {
               swal('Error', data.error, 'error');
@@ -343,7 +345,7 @@ Markdown="false"
   <?php endif; ?>
 
   <!-- Section 1: Backup Location -->
-  <div id="title" class="nocontrol full_width_title">Step 1 &mdash; Backup Location</div>
+  <div class="title" class="nocontrol full_width_title">Step 1 &mdash; Backup Location</div>
 
   <div id="restore_location_div" class="grid_container_left">
 
@@ -378,7 +380,7 @@ Markdown="false"
   <!-- Section 2: VM and Version Selection (shown after scan) -->
   <div id="vm_selection_section">
 
-    <div id="title" class="nocontrol full_width_title">Step 2 &mdash; Select VMs and Versions</div>
+    <div class="title" class="nocontrol full_width_title">Step 2 &mdash; Select VMs and Versions</div>
 
     <div id="vm_select_all_row" style="display:none; padding: 0 10px 4px 10px;">
       <div class="vm_select_all_links">
@@ -392,7 +394,7 @@ Markdown="false"
   </div>
 
   <!-- Section 3: Options -->
-  <div id="title" class="nocontrol full_width_title">Step 3 &mdash; Options</div>
+  <div class="title" class="nocontrol full_width_title">Step 3 &mdash; Options</div>
 
   <div id="restore_options_div" class="grid_container_left">
 
@@ -414,7 +416,7 @@ Markdown="false"
   </div>
 
   <!-- Section 4: Confirmation -->
-  <div id="title" class="nocontrol full_width_title">Step 4 &mdash; Confirm</div>
+  <div class="title" class="nocontrol full_width_title">Step 4 &mdash; Confirm</div>
 
   <div id="restore_confirm_div" class="grid_container_left">
 
@@ -444,7 +446,7 @@ Markdown="false"
   </div>
 
   <!-- Section 5: Actions and Status -->
-  <div id="title" class="nocontrol full_width_title">Step 5 &mdash; Run Restore</div>
+  <div class="title" class="nocontrol full_width_title">Step 5 &mdash; Run Restore</div>
 
   <div id="restore_actions_div" style="padding: 0 10px 10px 10px;">
     <input type="button" id="btn_restore_now" value="Restore Now" disabled
@@ -457,7 +459,7 @@ Markdown="false"
   <!-- Status Panel -->
   <div id="restore_status_section" <?php if (!$restore_running): ?>style="display:none"<?php endif; ?>>
 
-    <div id="title" class="nocontrol full_width_title">Restore Status</div>
+    <div class="title" class="nocontrol full_width_title">Restore Status</div>
 
     <div style="padding: 0 10px 10px 10px;">
       <table id="restore_status_table">
@@ -474,7 +476,7 @@ Markdown="false"
       </table>
     </div>
 
-    <div id="title" class="nocontrol full_width_title">Restore Log</div>
+    <div class="title" class="nocontrol full_width_title">Restore Log</div>
 
     <div style="padding: 0 10px 10px 10px;">
       <pre id="restore_log_pre">Waiting for log output...</pre>

@@ -225,7 +225,7 @@ only_send_error_notifications="no_config"
         if [ "${zstd_rsyncable}" -eq 1 ]; then
           zstd_rsyncable_flag="--rsyncable"
         fi
-        zstd -${zstd_level} -T${zstd_threads} --sparse ${zstd_rsyncable_flag} "${source}" -o "${destination}"
+        zstd -${zstd_level} -T${zstd_threads} --sparse ${zstd_rsyncable_flag:+--rsyncable} "${source}" -o "${destination}"
         local copy_result="$?"
         ;;
 
