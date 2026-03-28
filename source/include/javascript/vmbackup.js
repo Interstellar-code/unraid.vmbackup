@@ -62,11 +62,11 @@
       $("#vmbackup_danger_zone_file").val("vmbackup/user.cfg");
     }
     // append current config to forms.
-    $("#vmbackup_settings_form").append('<input type="hidden" name="#arg[2]" value="' + config + '">');
-    $("#backup_now_form").append('<input type="hidden" name="#args[2]" value="' + config + '">');
+    $("#vmbackup_settings_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
+    $("#backup_now_form").append('<input type="hidden" name="#args2" value="' + config + '">');
     $("#upload_form").append('<input type="hidden" name="#current_config" value="' + config + '">');
-    $("#vmbackup_other_settings_form").append('<input type="hidden" name="#arg[2]" value="' + config + '">');
-    $("#vmbackup_danger_zone_form").append('<input type="hidden" name="#arg[2]" value="' + config + '">');
+    $("#vmbackup_other_settings_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
+    $("#vmbackup_danger_zone_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
   }
 
   // function to set the current config.
@@ -401,9 +401,9 @@
             }).done(function () {
               // build data object.
               if (current_config == "default") {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
               } else {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
               }
               // rebuild text files.
               $.ajax({
@@ -453,7 +453,7 @@
       // check to see if text files should be rebuilt.
       if (rebuild_text_files) {
         // append input to form submission to force text files to be re-created.
-        $("#vmbackup_settings_form").append('<input type="hidden" name="#arg[3]" value="rebuild_text_files">');
+        $("#vmbackup_settings_form").append('<input type="hidden" name="#arg3" value="rebuild_text_files">');
         set_variable_cookie("rebuild_text_files", false);
       }
       // submit the form with the clicked button appended.
@@ -534,7 +534,7 @@
             // check to see if text files should be rebuilt.
             if (rebuild_text_files) {
               // append input to form submission to force text files to be re-created.
-              $("#vmbackup_settings_form").append('<input type="hidden" name="#arg[3]" value="rebuild_text_files">');
+              $("#vmbackup_settings_form").append('<input type="hidden" name="#arg3" value="rebuild_text_files">');
               set_variable_cookie("rebuild_text_files", false);
             }
             // submit the vmbackup settings form like normal.
@@ -1096,9 +1096,9 @@
             }).done(function () {
               // build data object.
               if (current_config == "default") {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
               } else {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
               }
               // rebuild text files.
               $.ajax({
@@ -1329,9 +1329,9 @@
               }).done(function () {
                 // build data object.
                 if (current_config == "default") {
-                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
+                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
                 } else {
-                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
+                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
                 }
                 // rebuild text files.
                 $.ajax({
@@ -1371,7 +1371,7 @@
       // check to see if text files should be rebuilt.
       if (rebuild_text_files) {
         // append input to form submission to force text files to be re-created.
-        $("#apply_vmbackup_danger_zone").append('<input type="hidden" name="#arg[3]" value="rebuild_text_files">');
+        $("#apply_vmbackup_danger_zone").append('<input type="hidden" name="#arg3" value="rebuild_text_files">');
         set_variable_cookie("rebuild_text_files", false);
       }
       // submit the form with the clicked button appended.
