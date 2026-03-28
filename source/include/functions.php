@@ -478,6 +478,13 @@
   }
 
 
+  // function to create an option element with exact comma-delimited match (avoids substring false positives).
+  function mk_option_check_exact($saved_values, $option, $label) {
+    $items = array_map('trim', explode(',', $saved_values));
+    $selected = in_array($option, $items, true) ? ' selected' : '';
+    return "<option value=\"{$option}\"{$selected}>{$label}</option>\n";
+  }
+
   // check for post commands.
   // if update_script_contents argument exists, then update the user script file.
   if (isset($_POST['#update_script_contents'])) {

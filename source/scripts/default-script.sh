@@ -141,6 +141,12 @@ zstd_threads="no_config"
 # this is the legacy setting for compression.
 gzip_level="no_config"
 
+# default is 0. set to 1 to add the --rsyncable flag to zstd compression for rsync-friendly output.
+zstd_rsyncable="no_config"
+
+# default is 0. set to 1 to add the --rsyncable flag to gzip compression for rsync-friendly output.
+gzip_rsyncable="no_config"
+
 # default is 0. set this to 1 to compare files after copy and run rsync in the event of failure. could add significant amount of time depending on the size of vms.
 compare_files="no_config"
 
@@ -215,7 +221,11 @@ only_send_error_notifications="no_config"
 
       "inline_zstd_compress")
         # perform inline zstd compression (with sparse file support).
-        zstd -${zstd_level} -T${zstd_threads} --sparse "${source}" -o "${destination}"
+        local zstd_rsyncable_flag=""
+        if [ "${zstd_rsyncable}" -eq 1 ]; then
+          zstd_rsyncable_flag="--rsyncable"
+        fi
+        zstd -${zstd_level} -T${zstd_threads} --sparse ${zstd_rsyncable_flag} "${source}" -o "${destination}"
         local copy_result="$?"
         ;;
 
@@ -2679,6 +2689,9 @@ only_send_error_notifications="no_config"
             gzip_cmd=()
             gzip_cmd=(gzip)
             gzip_cmd+=(-"${gzip_level}")
+            if [ "${gzip_rsyncable}" -eq 1 ]; then
+              gzip_cmd+=(--rsyncable)
+            fi
 
             # execute commands together to compress files
             (cd "${backup_location}/${vm}/" && "${tar_cmd[@]}" | "${gzip_cmd[@]}" > "${backup_location}/${vm}/${vm}.tar.gz")
@@ -2756,6 +2769,9 @@ only_send_error_notifications="no_config"
           gzip_cmd=()
           gzip_cmd=(gzip)
           gzip_cmd+=(-"${gzip_level}")
+          if [ "${gzip_rsyncable}" -eq 1 ]; then
+            gzip_cmd+=(--rsyncable)
+          fi
 
           # execute commands together to compress files
           (cd "${backup_location}/${vm}/" && "${tar_cmd[@]}" | "${gzip_cmd[@]}" > "${backup_location}/${vm}/${timestamp}${vm}.tar.gz")

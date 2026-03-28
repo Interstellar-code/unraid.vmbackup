@@ -267,8 +267,8 @@ Icon="clone"
         <ul>
           <li>This can be a device/share mapped through unassigned devices, or an Unraid share you have already created.</li>
           <li>Each VM will have a subfolder made for it in this location.</li>
-          <li>To change the dropdown menu from /mnt/users/ to /mnt/, disable restrictive validation.</li>
-          <li>Any typed path in /mnt/ will validate. If a different path is needed, disable restrictive validation on the Danger Zone tab.</li>
+          <li>The folder picker is rooted at /mnt/, supporting user shares, cache, unassigned disks (/mnt/disks/), and remote mounts (/mnt/remotes/).</li>
+          <li>Any typed path in /mnt/ will validate. If a path outside /mnt/ is needed, disable restrictive validation on the Danger Zone tab.</li>
         </ul>
       </span>
 
@@ -293,7 +293,7 @@ Icon="clone"
       <div class="user_input_div"><select id="vms_to_backup" name="vms_to_backup" size="1" multiple="multiple" style="display:none">
         <?$vm_list_array = file($vm_list, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($vm_list_array as $vm):?>
-          <?=mk_option_check($conf_array['vms_to_backup'], $vm, $vm)?>
+          <?=mk_option_check_exact($conf_array['vms_to_backup'], $vm, $vm)?>
         <?endforeach;?>
       </select></div>
 
@@ -491,7 +491,7 @@ Icon="clone"
         <? $vdisk_list_json_contents = file_get_contents($vdisk_list);
         $vdisk_list_array = json_decode($vdisk_list_json_contents, true);
         foreach ($vdisk_list_array as $key => $value):?>
-          <?=mk_option_check($conf_array['vdisks_to_skip'], $key, $value)?>
+          <?=mk_option_check_exact($conf_array['vdisks_to_skip'], $key, $value)?>
         <?endforeach;?>
       </select></div>
 

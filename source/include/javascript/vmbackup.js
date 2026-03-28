@@ -600,7 +600,7 @@
     add_validation_events('backup_location', 'Path must be located in /mnt/, or disable restrictive validation. Cannot be blank.');
     if ($("#disable_restrictive_regex").val() == "0") {
       // set backup location drop-down list folder root.
-      change_attr("#backup_location", "data-pickroot", "/mnt/user/");
+      change_attr("#backup_location", "data-pickroot", "/mnt/");
       // add file tree to backup location.
       if (attach_file_tree) {
         $("#backup_location").fileTreeAttach();
@@ -1198,7 +1198,7 @@
   function toggle_restrictive_regex() {
     if ($("#disable_restrictive_regex").val() == "0") {
       // set backup location drop-down list folder root.
-      change_attr("#backup_location", "data-pickroot", "/mnt/user/");
+      change_attr("#backup_location", "data-pickroot", "/mnt/");
       // add file tree to backup location.
       $("#backup_location").fileTreeAttach();
       // set regex patterns for validation.

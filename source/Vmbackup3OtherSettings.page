@@ -222,6 +222,36 @@ Icon="clone"
       </span>
 
 
+      <label name="zstd_rsyncable_label" class="input_description">Enable rsyncable Zstandard compression?</label>
+      <div class="user_input_div"><select id="zstd_rsyncable" name="zstd_rsyncable" size="1">
+        <?=mk_option($conf_array['zstd_rsyncable'], "0", "No");?>
+        <?=mk_option($conf_array['zstd_rsyncable'], "1", "Yes");?>
+      </select></div>
+
+      <span class="custom_inline_help">
+        <p>Set to 'Yes' to add the --rsyncable flag to Zstandard compression.</p>
+        <ul>
+          <li>Produces output that is more efficient to transfer with rsync after re-compression.</li>
+          <li>Default is 'No'.</li>
+        </ul>
+      </span>
+
+
+      <label name="gzip_rsyncable_label" class="input_description">Enable rsyncable legacy gzip compression?</label>
+      <div class="user_input_div"><select id="gzip_rsyncable" name="gzip_rsyncable" size="1">
+        <?=mk_option($conf_array['gzip_rsyncable'], "0", "No");?>
+        <?=mk_option($conf_array['gzip_rsyncable'], "1", "Yes");?>
+      </select></div>
+
+      <span class="custom_inline_help">
+        <p>Set to 'Yes' to add the --rsyncable flag to legacy gzip compression.</p>
+        <ul>
+          <li>Produces output that is more efficient to transfer with rsync after re-compression.</li>
+          <li>Default is 'No'.</li>
+        </ul>
+      </span>
+
+
       <label name="timestamp_files_label" class="input_description">Timestamp backups?</label>
       <div class="user_input_div"><select id="timestamp_files" name="timestamp_files" size="1">
         <?=mk_option($conf_array['timestamp_files'], "0", "No");?>

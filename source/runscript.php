@@ -164,7 +164,7 @@
       // check to see if a backup is already running.
       if (script_running($tmp_plugin_path_scripts)) {
         file_put_contents($tmp_log_file, date('Y-m-d H:i:s')." Simultaneous execution is disabled, and a script is already running. Exiting.\n", FILE_APPEND);
-        exec('/usr/local/emhttp/plugins/dynamix/scripts/notify -s "VM Backup plugin" -d "cannot run '.$config_name.'" -i "warning" -m "$(date \'+%Y-%m-%d %H:%M\') Simultaneous execution is disabled, and a script is already running. Exiting."');
+        exec('/usr/local/emhttp/plugins/dynamix/scripts/notify -s "VM Backup plugin" -d "cannot run '.$config_name.'" -i "normal" -m "$(date \'+%Y-%m-%d %H:%M\') Simultaneous execution is disabled, and a script is already running. Exiting."');
         exit();
       }
     }
