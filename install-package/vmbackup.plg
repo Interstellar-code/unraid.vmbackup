@@ -5,10 +5,10 @@
 <!ENTITY author     "Interstellar-code">
 <!ENTITY version    "2026.03.29">
 <!ENTITY tag        "v0.3.1">
-<!ENTITY branch     "dev/v0.3.0">
+<!ENTITY branch     "master">
 <!ENTITY launch     "Settings/Vmbackup">
 <!ENTITY icon       "clone">
-<!ENTITY gitURL     "https://raw.githubusercontent.com/Interstellar-code/unraid.vmbackup/dev/v0.3.0">
+<!ENTITY gitURL     "https://raw.githubusercontent.com/&author;/unraid.&name;/&branch;">
 <!ENTITY pluginURL  "&gitURL;/vmbackup.plg">
 <!ENTITY supportURL "https://github.com/Interstellar-code/unraid.vmbackup">
 <!ENTITY packages   "/boot/config/plugins/&name;/packages">
