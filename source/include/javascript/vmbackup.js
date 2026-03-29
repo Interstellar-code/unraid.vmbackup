@@ -63,7 +63,7 @@
     }
     // append current config to forms.
     $("#vmbackup_settings_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
-    $("#backup_now_form").append('<input type="hidden" name="#args2" value="' + config + '">');
+    $("#backup_now_form").append('<input type="hidden" name="#args[2]" value="' + config + '">');
     $("#upload_form").append('<input type="hidden" name="#current_config" value="' + config + '">');
     $("#vmbackup_other_settings_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
     $("#vmbackup_danger_zone_form").append('<input type="hidden" name="#arg2" value="' + config + '">');
@@ -401,9 +401,9 @@
             }).done(function () {
               // build data object.
               if (current_config == "default") {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
               } else {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
               }
               // rebuild text files.
               $.ajax({
@@ -1096,9 +1096,9 @@
             }).done(function () {
               // build data object.
               if (current_config == "default") {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
               } else {
-                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
+                var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
               }
               // rebuild text files.
               $.ajax({
@@ -1329,9 +1329,9 @@
               }).done(function () {
                 // build data object.
                 if (current_config == "default") {
-                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists", "#args2": "rebuild_text_files" };
+                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists", "#args[2]": "rebuild_text_files" };
                 } else {
-                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args1": "create_vm_lists" };
+                  var data = { "#script": "/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh", "#args[1]": "create_vm_lists" };
                 }
                 // rebuild text files.
                 $.ajax({

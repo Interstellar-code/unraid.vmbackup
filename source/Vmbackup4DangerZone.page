@@ -359,12 +359,12 @@ Icon="clone"
   <div class="buttons_right">
     <form id="fix_snapshots_form" name="fix_snapshots_form" autocomplete="off" method="POST" action="/plugins/vmbackup/include/functions.php" target="progressFrame" style="float:right">
       <input type="hidden" name="#script" value="/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh">
-      <input type="hidden" name="#args1" value="fix_snapshots">
+      <input type="hidden" name="#args[1]" value="fix_snapshots">
       <input type="button" id="fix_snapshots" name="#fix_snapshots" value="Fix Snapshots">
     </form>
     <form id="abort_script_form" name="abort_script_form" autocomplete="off" method="POST" action="/plugins/vmbackup/include/functions.php" target="progressFrame" style="float:right">
       <input type="hidden" name="#script" value="/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh">
-      <input type="hidden" name="#args1" value="abort_script">
+      <input type="hidden" name="#args[1]" value="abort_script">
       <input type="button" id="abort_script" name="#abort_script" value="Abort Script">
     </form>
   </div>
