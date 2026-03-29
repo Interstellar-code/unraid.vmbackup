@@ -62,7 +62,7 @@ Icon="clone"
 
       <div id="add_config_div" name="add_config_div" class="clear_both">
         <label>Choose a config name:</label>
-        <div class="clear_both"><input type="text" class="narrow" id="add_config" name="add_config" maxlength="100" pattern="^[^\/\. ](([\w.-]+)( [\w.-]+)*)+$"></div>
+        <div class="clear_both"><input type="text" class="narrow" id="add_config" name="add_config" maxlength="100" pattern="^[^\/\. ](([\w.\-]+)( [\w.\-]+)*)+$"></div>
       </div>
       <div id="add_config_button_div" name="add_config_button_div" class="clear_both">
         <input type="button" id="add_config_button" name="#add_config_button" value="Add Config">

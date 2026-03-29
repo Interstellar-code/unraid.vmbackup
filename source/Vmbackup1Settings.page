@@ -260,7 +260,7 @@ Icon="clone"
 
 
       <label name="backup_location_label" class="input_description">Set backup location:</label>
-      <div class="user_input_div"><input type="text" id="backup_location" name="backup_location" class="setting" value="<?=$conf_array['backup_location'];?>" pattern="^\/mnt\/([\w.-]*)+(\/[\w.-]*)*$" placeholder="Select a backup location" data-pickfilter="NO_FILES_FILTER" data-pickfolders="true" required></div>
+      <div class="user_input_div"><input type="text" id="backup_location" name="backup_location" class="setting" value="<?=$conf_array['backup_location'];?>" pattern="^\/mnt\/([\w.\-]*)+(\/[\w.\-]*)*$" placeholder="Select a backup location" data-pickfilter="NO_FILES_FILTER" data-pickfolders="true" required></div>
 
       <span id="backup_location_help" name="backup_location_help" class="custom_inline_help">
         <p>Folder location to save backups. Must be full path.</p>
@@ -503,7 +503,7 @@ Icon="clone"
 
 
       <label name="vdisk_extensions_to_skip_label" class="input_description">List vdisk extensions to skip:</label>
-      <div class="user_input_div"><input type="text" id="vdisk_extensions_to_skip" name="vdisk_extensions_to_skip" class="narrow" maxlength="9999" value="<?=$conf_array['vdisk_extensions_to_skip'];?>" pattern="^([\w.-]*)(,\s{0,1}[\w.-]+)*$"></div>
+      <div class="user_input_div"><input type="text" id="vdisk_extensions_to_skip" name="vdisk_extensions_to_skip" class="narrow" maxlength="9999" value="<?=$conf_array['vdisk_extensions_to_skip'];?>" pattern="^([\w.\-]*)(,\s{0,1}[\w.\-]+)*$"></div>
 
       <span name="vdisk_extensions_to_skip_help" class="custom_inline_help">
         <p>Comma separated list of vdisk extensions to skip.</p>

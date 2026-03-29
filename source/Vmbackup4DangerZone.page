@@ -121,7 +121,7 @@ Icon="clone"
 
 
       <label name="snapshot_extension_label" class="input_description">Snapshot extension:</label>
-      <div class="user_input_div"><input type="text" id="snapshot_extension" name="snapshot_extension" class="narrow" maxlength="50" value="<?=$conf_array['snapshot_extension'];?>" pattern="^[^., ]+([\w.-])+[^,. ]+$" required></div>
+      <div class="user_input_div"><input type="text" id="snapshot_extension" name="snapshot_extension" class="narrow" maxlength="50" value="<?=$conf_array['snapshot_extension'];?>" pattern="^[^., ]+([\w.\-])+[^,. ]+$" required></div>
 
       <span class="custom_inline_help">
         <p>Change the extension used when creating snapshots.</p>

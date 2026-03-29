@@ -1649,7 +1649,7 @@
               return false;
             }
             // create a regular expression variable to use for validation.
-            var name_regex = /^[^\/\. ](([\w.-]+)( [\w.-]+)*)+$/
+            var name_regex = /^[^\/\. ](([\w.\-]+)( [\w.\-]+)*)+$/
             if (name_regex.test(inputValue.trim())) {
               var new_config_name = inputValue.trim();
               // get the serialized form data.
@@ -1758,7 +1758,7 @@
               return false;
             }
             // create a regular expression variable to use for validation.
-            var name_regex = /^[^\/\. ](([\w.-]+)( [\w.-]+)*)+$/
+            var name_regex = /^[^\/\. ](([\w.\-]+)( [\w.\-]+)*)+$/
             if (name_regex.test(inputValue.trim())) {
               var copy_config_name = inputValue.trim();
               // get the serialized form data.
