@@ -95,6 +95,26 @@ Icon="clone"
   exec("$commands_script_file create_vm_lists");
 ?>
 
+<?php
+// Check for running backup - called via AJAX
+if (isset($_GET['check_backup_status'])) {
+  header('Content-Type: application/json');
+  $pids = glob('/tmp/vmbackup/scripts/*.pid');
+  $running = [];
+  foreach ($pids as $pid_file) {
+    $pid = (int)trim(file_get_contents($pid_file));
+    if ($pid > 0 && file_exists("/proc/{$pid}")) {
+      $config = basename($pid_file, '.pid');
+      $running[] = ['config' => $config, 'pid' => $pid];
+    } else {
+      @unlink($pid_file); // Clean stale PID
+    }
+  }
+  echo json_encode(['running' => $running]);
+  exit;
+}
+?>
+
 <!-- import stylesheets -->
 <link type="text/css" rel="stylesheet" href="<?autov('/webGui/styles/jquery.filetree.css')?>">
 <link type="text/css" rel="stylesheet" href="<?autov('/webGui/styles/jquery.switchbutton.css')?>">
@@ -206,9 +226,75 @@ Icon="clone"
     // fix the dimensions of the vms_to_backup_running dropdown box so that it will actually display
     fix_css_vms_to_backup_running();
   });
+
+  // Backup status polling
+  (function() {
+    function checkBackupStatus() {
+      $.get('/plugins/vmbackup/Vmbackup1Settings.page', { check_backup_status: 1 }, function(data) {
+        if (data.running && data.running.length > 0) {
+          var configs = data.running.map(function(r) { return r.config; }).join(', ');
+          $('#backup_status_text').text('Backup in progress for config: ' + configs);
+          $('#backup_status_banner').show();
+          // Disable Backup Now button while running
+          $('#backup').prop('disabled', true);
+        } else {
+          $('#backup_status_banner').hide();
+          $('#backup').prop('disabled', false);
+        }
+      }, 'json').fail(function() {
+        $('#backup_status_banner').hide();
+      });
+    }
+
+    // Check immediately on page load
+    checkBackupStatus();
+    // Then every 5 seconds
+    setInterval(checkBackupStatus, 5000);
+  })();
+
+  function killBackup() {
+    swal({
+      title: 'Stop Backup?',
+      text: 'Are you sure you want to stop the running backup?',
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, stop it',
+      closeOnConfirm: true
+    }, function(confirmed) {
+      if (confirmed) {
+        // Use the existing abort mechanism
+        $.post('/plugins/vmbackup/include/functions.php', {
+          '#script': '/usr/local/emhttp/plugins/vmbackup/scripts/commands.sh',
+          '#args[1]': 'abort_script'
+        });
+        setTimeout(function() {
+          $.get('/plugins/vmbackup/Vmbackup1Settings.page', { check_backup_status: 1 }, function(data) {
+            if (data.running && data.running.length > 0) {
+              var configs = data.running.map(function(r) { return r.config; }).join(', ');
+              $('#backup_status_text').text('Backup in progress for config: ' + configs);
+              $('#backup_status_banner').show();
+              $('#backup').prop('disabled', true);
+            } else {
+              $('#backup_status_banner').hide();
+              $('#backup').prop('disabled', false);
+            }
+          }, 'json').fail(function() {
+            $('#backup_status_banner').hide();
+          });
+        }, 2000);
+      }
+    });
+  }
 </script>
 
 <div id="vmbackup_settings_div" class="wrapper_div">
+
+  <!-- backup status banner -->
+  <div id="backup_status_banner" style="display:none; background:#f0ad4e; color:#000; padding:10px 15px; margin-bottom:10px; border-radius:4px; font-size:14px;">
+    <i class="fa fa-spinner fa-spin"></i>
+    <span id="backup_status_text">Backup in progress...</span>
+    <button id="kill_backup_btn" onclick="killBackup()" style="float:right; background:#d9534f; color:#fff; border:none; padding:5px 15px; border-radius:3px; cursor:pointer;">Stop Backup</button>
+  </div>
 
   <!-- current config -->
   <div class="wrapper_div">
@@ -604,7 +690,7 @@ Icon="clone"
       <input type="button" id="show_log" name="#show_log" value="Show Log" title="Show latest log.">
       <input type="button" id="backup" name="#backup" value="Backup Now">
     </form>
-    <div style="clear:both; float:right"><p>version: v0.3.0 - 2026/03/28 (Community Fork)</p></div>
+    <div style="clear:both; float:right"><p>version: v0.3.1 - 2026/03/29 (Community Fork)</p></div>
   </div>
 </div>
 
