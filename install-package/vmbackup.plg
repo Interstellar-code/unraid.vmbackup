@@ -3,8 +3,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name       "vmbackup">
 <!ENTITY author     "Interstellar-code">
-<!ENTITY version    "2026.03.28">
-<!ENTITY tag        "v0.3.0">
+<!ENTITY version    "2026.03.29">
+<!ENTITY tag        "v0.3.1">
 <!ENTITY branch     "dev/v0.3.0">
 <!ENTITY launch     "Settings/Vmbackup">
 <!ENTITY icon       "clone">
@@ -14,7 +14,7 @@
 <!ENTITY packages   "/boot/config/plugins/&name;/packages">
 <!ENTITY xmlstarlet "xmlstarlet-1.6.1-x86_64-1_slonly">
 <!ENTITY XMLMD5     "1539a7b5c9ea9c45fb0ec95418dfadb6">
-<!ENTITY MD5        "e169deb2fc8c6a7166d6995de2f3263b">
+<!ENTITY MD5        "4f362f8ec028c285c87a9f44848c063e">
 ]>
 
 <PLUGIN name="&name;"

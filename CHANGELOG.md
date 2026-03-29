@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.1 - 2026/03/29
+
+### Fixes
+- **Regex compatibility** — escape hyphens in character classes (`[\w.-]` → `[\w.\-]`) to fix `Invalid regular expression` errors in modern browsers using Unicode Sets mode
+- **Package ownership** — build `.txz` with `root:root` ownership to prevent `/` directory ownership change on install (was breaking SSH key auth)
+
+### Improvements
+- **Backup status indicator** — Settings tab now shows an orange banner when a backup is running, with the config name and a "Stop Backup" button
+- **Auto-disable Backup Now** — the button is disabled while a backup is already in progress
+- **Stale PID cleanup** — automatically removes PID files for processes that are no longer running
+
 ## v0.3.0 - 2026/03/28
 
 Community fork by [Interstellar-code](https://github.com/Interstellar-code/unraid.vmbackup), based on [JTok/unraid.vmbackup](https://github.com/JTok/unraid.vmbackup) v0.2.9.
