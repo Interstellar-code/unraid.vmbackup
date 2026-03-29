@@ -2,15 +2,15 @@
 
 <!DOCTYPE PLUGIN [
 <!ENTITY name       "vmbackup">
-<!ENTITY author     "jtok">
-<!ENTITY version    "2024.05.02">
-<!ENTITY tag        "v.0.2.9">
+<!ENTITY author     "Interstellar-code">
+<!ENTITY version    "2026.03.28">
+<!ENTITY tag        "v0.3.0">
 <!ENTITY branch     "master">
 <!ENTITY launch     "Settings/Vmbackup">
 <!ENTITY icon       "clone">
 <!ENTITY gitURL     "https://raw.githubusercontent.com/&author;/unraid.&name;/&branch;">
 <!ENTITY pluginURL  "&gitURL;/&name;.plg">
-<!ENTITY supportURL "https://forums.unraid.net/topic/86303-vm-backup-plugin/">
+<!ENTITY supportURL "https://github.com/Interstellar-code/unraid.vmbackup">
 <!ENTITY packages   "/boot/config/plugins/&name;/packages">
 <!ENTITY xmlstarlet "xmlstarlet-1.6.1-x86_64-1_slonly">
 <!ENTITY XMLMD5     "1539a7b5c9ea9c45fb0ec95418dfadb6">
@@ -28,6 +28,15 @@
 
 <CHANGES>
 ##&name;
+
+### v0.3.0 - 2026/03/28
+**Community Fork — Interstellar-code**
+
+- add Restore tab for restoring VMs from backups directly in the WebGUI
+- fix settings not saving on Unraid 7 (issues #46, #47)
+- add rsyncable compression option for zstd and gzip
+- 13 bug fixes — see CHANGELOG.md for full details
+- original plugin by JTok; fork maintained by Interstellar-code
 
 ### v0.2.9 - 2024/05/02
 **Widdershins**

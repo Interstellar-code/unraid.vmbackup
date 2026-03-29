@@ -476,7 +476,6 @@ Icon="clone"
       <span name="include_extra_files_help" class="custom_inline_help">
         <p>This will back up any extra files and folders in the directory of each vdisk.</p>
         <ul>
-          <li>WARNING: This is still in beta and may not work as expected yet.</li>
           <li>This is recommended for backing up non-standard VMs.</li>
           <li>This will still honor the vdisk extensions to skip setting.</li>
           <li>Any vdisk that is skipped will have its directory ignored unless a different vdisk in that directory is backed up.</li>
@@ -605,15 +604,10 @@ Icon="clone"
       <input type="button" id="show_log" name="#show_log" value="Show Log" title="Show latest log.">
       <input type="button" id="backup" name="#backup" value="Backup Now">
     </form>
-    <div style="clear:both; float:right"><p>version: v.0.2.9 - 2024.05.02</p></div>
+    <div style="clear:both; float:right"><p>version: v0.3.0 - 2026/03/28 (Community Fork)</p></div>
   </div>
 </div>
 
 <div align="left" style="padding-top:0px; width:50%; clear:both">
-  <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
-    <input type="hidden" name="cmd" value="_s-xclick" />
-    <input type="hidden" name="hosted_button_id" value="NG5HGW4Q3CZU4" />
-    <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-    <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-  </form>
+  <p style="font-size:12px; color:#888;">Issues or feedback? <a href="https://github.com/Interstellar-code/unraid.vmbackup/issues" target="_blank">GitHub Issues</a></p>
 </div>
